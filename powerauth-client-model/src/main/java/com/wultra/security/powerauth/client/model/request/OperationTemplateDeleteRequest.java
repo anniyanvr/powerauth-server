@@ -18,20 +18,20 @@
 
 package com.wultra.security.powerauth.client.model.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 /**
  * Delete operation template with given ID.
  *
  * @author Petr Dvorak, petr@wultra.com
  */
+@Data
 public class OperationTemplateDeleteRequest {
 
+    @Schema(description = "Operation template identifier")
+    @NotNull(message = "Operation template identifier must not be null when deleting operation template")
     private Long id;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 }

@@ -18,9 +18,9 @@ Running PowerAuth server from console using the `java -jar` command is not suppo
 ## Supported Java Runtime Versions
 
 The following Java runtime versions are supported:
-- Java 8 (LTS release)
-- Java 11 (LTS release)
+
 - Java 17 (LTS release)
+- Java 21 (LTS release)
 
 Powerauth Server may run on other Java versions, however we do not perform extensive testing with non-LTS releases.
 
@@ -28,18 +28,18 @@ Powerauth Server may run on other Java versions, however we do not perform exten
 
 PowerAuth Server primary installation method is running the WAR package in the Java VM environment. This chapter provides detailed system requirements.
 
-It is suggested to deploy PowerAuth in its own Java Servlet Container. PowerAuth Server is currently tested with following container technologies:
+It is suggested to deploy PowerAuth in its own Java Servlet Container.
+PowerAuth Server is currently tested with following container technologies supporting Jakarta EE 9:
 
-- Apache Tomcat 9.x, or
-- JBoss Wildfly 9 or newer
+- Apache Tomcat 10.x or newer
+- Wildfly 27 or newer
+- JBoss EAP 8 or newer
 
 PowerAuth supports any JPA2 compatible database, and it is tested with:
 
 - Oracle Database 11g, 12c, 19c, or 21c or
 - PostgreSQL 9.5.4 or newer, or
-- MySQL 5.5 or newer
-
-Note that MSSQL database is not supported due to unreliable row locking.
+- MSSQL 2019 or newer
 
 When deploying the PowerAuth Server, please follow the specifics of your application server.
 
@@ -60,3 +60,22 @@ You need following software versions:
 Deployment is described in a separate documentation:
 
 - [Docker Images for PowerAuth](https://github.com/wultra/powerauth-docker)
+
+
+## Entropy
+
+The PowerAuth stack requires significant amount of entropy because of random number generators (RNG) used for cryptography.
+When not enough entropy is available, the whole system may dramatically slow down or even get stuck.
+That may happen especially in virtualized environment.
+
+For Linux Kernel lower than 5.4, the minimal required entropy is 256, ideally more than 1024.
+For Linux Kernel 5.4 and higher: the minimal required entropy is 256 (it does not report more anyway).
+
+Command to get available entropy bits:
+
+```shell
+cat /proc/sys/kernel/random/entropy_avail
+```
+
+We recommend using Linux Kernel 5.4 and newer, where `/dev/random` does not block anymore.
+If you must run an older version, consider another source of entropy such as [haveged](https://github.com/jirka-h/haveged).

@@ -1,0 +1,110 @@
+/*
+ * PowerAuth Server and related software components
+ * Copyright (C) 2025 Wultra s.r.o.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+package com.wultra.security.powerauth.app.server.converter;
+
+import com.wultra.security.powerauth.app.server.database.model.SharedSecretRecord;
+import com.wultra.security.powerauth.app.server.database.model.enumeration.EncryptionAlgorithm;
+import com.wultra.security.powerauth.app.server.service.exceptions.GenericServiceException;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.util.Base64;
+
+import static com.wultra.security.powerauth.app.server.util.AssertionUtils.assertThrowsOrNotEqual;
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests for {@link ActivationSharedSecretConverter}.
+ *
+ * @author Roman Strobl, roman.strobl@wultra.com
+ */
+@SpringBootTest
+@ActiveProfiles("test")
+class ActivationSharedSecretConverterTest {
+
+    private static final String SHARED_SECRET_BASE64 = "G9Pa9bVMtZMTH04QQ+69yvaLGqeKFFan3bsfluA10qiYbc/kEsJK0oFINkyc19MMo1mr53BnrSpZ3IZre0MZVpxhq15cjDHJJ6lk/Q3dO8w=";
+
+    private static final String SHARED_SECRET_AES_HMAC_ENCRYPTED = "DNZ6P42qJUhruO3BEf3eaVjMnSDoFlaXfYXFhsoTMgA1ZvAzw2g00GwH3iP/hob83ntIOVCxYfHWH1dh4lgh2xHZ85ld/QtUMHmaKWXbHql1Em76kvJDeEcvJfQtP+kCbkmNG+JUfjXhLLm1q1gLuQ==";
+    private static final String SHARED_SECRET_AEAD_KMAC_ENCRYPTED = "qm/cDvp+HD0P1LN4nx3C4Btyp8iq1LKm+zMBa5kh3gk7LNTBgTxmnPHkP7OQpVOwCPdvF83W/KHJXF3cquHK7B5VGyEE9fS+sNRTH27WXVuipcTMzv0FHcPhfj9X0ZgOsCoecUIZRbcCVt4huM/zKyhX1c4FIYTakH/NUg==";
+
+    private static final String USER_ID = "test";
+
+    private static final String ACTIVATION_ID = "015286e0-e1c5-4ee1-8d1b-c6947cab0a56";
+
+    @Autowired
+    private ActivationSharedSecretConverter sharedSecretConverter;
+
+    @Test
+    void testFromDbValueNoEncryption() throws Exception {
+        final SharedSecretRecord sharedSecret = new SharedSecretRecord(EncryptionAlgorithm.NO_ENCRYPTION, SHARED_SECRET_BASE64);
+        final String sharedSecretActual = sharedSecretConverter.fromDBValue(sharedSecret, USER_ID, ACTIVATION_ID);
+
+        assertEquals(SHARED_SECRET_BASE64, sharedSecretActual);
+    }
+
+    @Test
+    void testEncryptionAndDecryptionSuccess() throws Exception {
+        byte[] sharedSecretBytes = Base64.getDecoder().decode(SHARED_SECRET_BASE64);
+        final SharedSecretRecord sharedSecretEncrypted = sharedSecretConverter.toDBValue(sharedSecretBytes, USER_ID, ACTIVATION_ID);
+        assertEquals(EncryptionAlgorithm.AEAD_KMAC, sharedSecretEncrypted.encryptionAlgorithm());
+        assertNotEquals(SHARED_SECRET_BASE64, sharedSecretEncrypted.sharedSecretBase64());
+
+        final String sharedSecretActual = sharedSecretConverter.fromDBValue(sharedSecretEncrypted, USER_ID, ACTIVATION_ID);
+        assertEquals(SHARED_SECRET_BASE64, sharedSecretActual);
+    }
+
+    @Test
+    void testFromDbValueEncryptionAesHmac() throws Exception {
+        final SharedSecretRecord sharedSecretEncrypted = new SharedSecretRecord(EncryptionAlgorithm.AES_HMAC, SHARED_SECRET_AES_HMAC_ENCRYPTED);
+        final String result = sharedSecretConverter.fromDBValue(sharedSecretEncrypted, USER_ID, ACTIVATION_ID);
+        assertEquals(SHARED_SECRET_BASE64, result);
+    }
+
+    @Test
+    void testFromDbValueEncryptionAeadKmac() throws Exception {
+        final SharedSecretRecord sharedSecretEncrypted = new SharedSecretRecord(EncryptionAlgorithm.AEAD_KMAC, SHARED_SECRET_AEAD_KMAC_ENCRYPTED);
+        final String result = sharedSecretConverter.fromDBValue(sharedSecretEncrypted, USER_ID, ACTIVATION_ID);
+        assertEquals(SHARED_SECRET_BASE64, result);
+    }
+
+    @Test
+    void testEncryptionAndDecryptionDifferentUserIdFail() throws Exception {
+        final byte[] sharedSecretBytes = Base64.getDecoder().decode(SHARED_SECRET_BASE64);
+        final SharedSecretRecord sharedSecretEncrypted = sharedSecretConverter.toDBValue(sharedSecretBytes, USER_ID, ACTIVATION_ID);
+        assertEquals(EncryptionAlgorithm.AEAD_KMAC, sharedSecretEncrypted.encryptionAlgorithm());
+        assertThrowsOrNotEqual(GenericServiceException.class,
+                () -> sharedSecretConverter.fromDBValue(sharedSecretEncrypted, "test2", ACTIVATION_ID),
+                sharedSecretBytes);
+    }
+
+
+    @Test
+    void testEncryptionAndDecryptionDifferentActivationIdFail() throws Exception {
+        final byte[] sharedSecretBytes = Base64.getDecoder().decode(SHARED_SECRET_BASE64);
+        final SharedSecretRecord sharedSecretEncrypted = sharedSecretConverter.toDBValue(sharedSecretBytes, USER_ID, ACTIVATION_ID);
+
+        assertEquals(EncryptionAlgorithm.AEAD_KMAC, sharedSecretEncrypted.encryptionAlgorithm());
+        assertThrowsOrNotEqual(GenericServiceException.class,
+                () -> sharedSecretConverter.fromDBValue(sharedSecretEncrypted, USER_ID, "01e9deb4-a0e0-4204-b8a6-925e76b7b3d3"),
+                sharedSecretBytes);
+    }
+
+}

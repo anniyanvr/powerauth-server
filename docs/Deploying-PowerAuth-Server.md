@@ -8,9 +8,7 @@ Following databases are supported:
 
 - Oracle Database 11g, 12c, 19c, or 21c or
 - PostgreSQL 9.5.4 or newer, or
-- MySQL 5.5 or newer
-
-Note that MSSQL database is not supported.
+- MSSQL 2019 or newer
 
 ## Downloading PowerAuth Server WAR
 
@@ -27,7 +25,6 @@ For example, when using Oracle with Tomcat, make sure to add `ojdbc-${VERSION}.j
 In order for the PowerAuth Server to work, you need to have a correct schema in the database. To create the correct database schema, execute these SQL scripts for your database engine:
 
 - [Oracle - Create Database Schema](./sql/oracle/create_schema.sql)
-- [MySQL - Create Database Schema](./sql/mysql/create_schema.sql)
 - [PostgreSQL - Create Database Schema](./sql/postgresql/create_schema.sql)
 
 You can read more about PowerAuth Server database schema in following guide:
@@ -44,9 +41,6 @@ The default database connectivity parameters in `powerauth-java-server.war` are 
 spring.datasource.url=jdbc:postgresql://localhost:5432/powerauth
 spring.datasource.username=powerauth
 spring.datasource.password=
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.temp.use_jdbc_metadata_defaults=false
 spring.jpa.hibernate.ddl-auto=none
 spring.jpa.properties.hibernate.connection.characterEncoding=utf8
 spring.jpa.properties.hibernate.connection.useUnicode=true
@@ -61,10 +55,7 @@ For Oracle database use following connectivity parameters (example):
 spring.datasource.url=jdbc:oracle:thin:@//[HOST]:[PORT]/[SERVICENAME]
 spring.datasource.username=powerauth
 spring.datasource.password=*********
-spring.datasource.driver-class-name=oracle.jdbc.driver.OracleDriver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto=none
-spring.jpa.properties.hibernate.temp.use_jdbc_metadata_defaults=false
 ```
 
 ### PostgreSQL Connectivity Parameters
@@ -74,10 +65,7 @@ For PostgreSQL use following connectivity parameters (example):
 spring.datasource.url=jdbc:postgresql://[HOST]:[PORT]/[DATABASE]
 spring.datasource.username=powerauth
 spring.datasource.password=*********
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto=none
-spring.jpa.properties.hibernate.temp.use_jdbc_metadata_defaults=false
 ```
 
 ### Specifying Database Connection Character Set
@@ -99,7 +87,7 @@ powerauth.service.applicationDisplayName=PowerAuth Server
 powerauth.service.applicationEnvironment=
 ```
 
-These properties are returned when calling the `/rest/v3/status` method of the RESTful interface.
+These properties are returned when calling the `/rest/v4/status` method of the RESTful interface.
 
 ## Enabling PowerAuth Server Security
 
@@ -141,11 +129,9 @@ You can specify the individual properties directly in the server configuration. 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Context>
-    <Parameter name="spring.datasource.url" value="jdbc:mysql://localhost:3306/powerauth"/>
+    <Parameter name="spring.datasource.url" value="jdbc:postgresql://localhost:5432"/>
     <Parameter name="spring.datasource.username" value="powerauth"/>
     <Parameter name="spring.datasource.password" value=""/>
-    <Parameter name="spring.datasource.driver-class-name" value="com.mysql.jdbc.Driver"/>
-    <Parameter name="spring.jpa.database-platform" value="org.hibernate.dialect.PostgreSQLDialect"/>
 </Context>
 ```
 
@@ -166,9 +152,11 @@ To match the previous example, the contents of `/path/to/come/custom.properties`
 spring.datasource.url=jdbc:postgresql://localhost:5432/powerauth
 spring.datasource.username=powerauth
 spring.datasource.password=
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
 ```
+
+## Application Level Per-Record Database Encryption 
+
+Follow the instructions in chapter [Encrypting Records in Database](./Encrypting-Records-in-Database.md) to configure per-record database encryption. You can also disable application encryption for non-production environments. The application will fail to start without configuring a 32-byte encryption key or disabling encryption. 
 
 ## Generating Your First Application
 
@@ -232,7 +220,7 @@ For best traceability, the correlation headers should be enabled in the whole Po
 
 ### Issues With Database Connectivity
 
-Note that some database engines (for example MySQL) let you specify the default schema as a part of a URL. Other engines, for example **Oracle**, do not allow this. In order to specify the correct default schema, you need to use a following property:
+Note that some database engines let you specify the default schema as a part of a URL. Other engines, for example **Oracle**, do not allow this. In order to specify the correct default schema, you need to use a following property:
 
 ```sh
 spring.jpa.properties.hibernate.default_schema=powerauth
@@ -244,10 +232,28 @@ Some application servers, such as **WildFly** by JBoss, are very restrictive in 
 spring.datasource.url=
 spring.datasource.username=
 spring.datasource.password=
-spring.datasource.driver-class-name=
 spring.jpa.database-platform=
 spring.jpa.hibernate.ddl-auto=none
 spring.datasource.jndi-name=java:/jdbc/powerauth
+```
+
+### Deploying on MSSQL Database
+
+<!-- begin box warning -->
+The MSSQL database must run in SNAPSHOT transaction isolation mode for PowerAuth server. In case of a different transactions mode, database deadlocks can occur frequently.
+<!-- end -->
+
+You can enable the mode using following query:
+
+```sql
+ALTER DATABASE [powerauth_database] SET ALLOW_SNAPSHOT_ISOLATION ON;
+ALTER DATABASE [powerauth_database] SET READ_COMMITTED_SNAPSHOT ON;
+```
+
+The SNAPSHOT transaction isolation level is enforced automatically when database sessions are started using following query:
+
+```sql
+SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
 ```
 
 ### Deploying On JBoss / Wildfly
@@ -257,4 +263,13 @@ Follow the extra instructions in chapter [Deploying PowerAuth Server on JBoss / 
 ### Issues With Bouncy Castle Provider
 
 PowerAuth Server uses Bouncy Castle as a Java cryptography provider. If you encounter any issues that may point to an incorrectly installed cryptography provider, please follow our tutorial [how to configure Bouncy Castle](./Installing-Bouncy-Castle.md).
+
+### How to Disable Display of Tomcat Version
+
+It case you do not want to show Tomcat version on error pages when deploying PowerAuth server, you can use the following configuration:
+
+- Edit the file `<install-directory>/conf/server.xml`.
+- Search for the parameters `<Host name="..."/>`.
+- Just below that line, insert the following parameters `<Valve className="org.apache.catalina.valves.ErrorReportValve" showReport="false" showServerInfo="false"/>`.
+- Restart Tomcat.
 

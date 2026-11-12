@@ -18,6 +18,12 @@
 
 package com.wultra.security.powerauth.client.model.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,39 +32,23 @@ import java.util.Map;
  *
  * @author Petr Dvorak, petr@wultra.com
  */
+@Data
 public class OperationRejectRequest {
 
+    @Schema(description = "The identifier of the operation")
+    @NotBlank(message = "Operation ID must not be empty when rejecting operation")
     private String operationId;
+
+    @Schema(description = "The identifier of the user")
+    @NotBlank(message = "User ID must not be empty when rejecting operation")
     private String userId;
+
+    @Schema(description = "The identifier of the application")
+    @NotBlank(message = "Application ID must not be empty when rejecting operation")
     private String applicationId;
-    private final Map<String, String> additionalData = new LinkedHashMap<>();
 
-    public String getOperationId() {
-        return operationId;
-    }
-
-    public void setOperationId(String operationId) {
-        this.operationId = operationId;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getApplicationId() {
-        return applicationId;
-    }
-
-    public void setApplicationId(String applicationId) {
-        this.applicationId = applicationId;
-    }
-
-    public Map<String, String> getAdditionalData() {
-        return additionalData;
-    }
+    @Schema(description = "Additional data associated with the operation")
+    @JsonSetter(nulls = Nulls.SKIP)
+    private final Map<String, Object> additionalData = new LinkedHashMap<>();
 
 }

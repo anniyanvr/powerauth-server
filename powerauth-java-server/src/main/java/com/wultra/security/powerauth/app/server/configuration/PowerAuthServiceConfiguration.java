@@ -1,0 +1,713 @@
+/*
+ * PowerAuth Server and related software components
+ * Copyright (C) 2018 Wultra s.r.o.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.wultra.security.powerauth.app.server.configuration;
+
+import com.wultra.security.powerauth.app.server.database.model.enumeration.EncryptionAlgorithm;
+import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
+import tools.jackson.databind.SerializationFeature;
+
+import java.time.Duration;
+import java.util.Base64;
+
+/**
+ * Class holding the configuration data of this PowerAuth Server
+ * instance. Default values are in "application.properties" file.
+ *
+ * @author Petr Dvorak, petr@wultra.com
+ */
+@Configuration
+@ConfigurationProperties("ext")
+@Validated
+@Getter
+@Setter
+@Slf4j
+public class PowerAuthServiceConfiguration {
+
+    /**
+     * The maximum supported major version of the PowerAuth protocol.
+     * This constant is used in the activation status to indicate
+     * whether protocol upgrade is possible.
+     */
+    public static final byte POWERAUTH_PROTOCOL_VERSION = 0x4;
+
+    /**
+     * Minimal value for {@link #proximityCheckOtpLength}.
+     */
+    private static final int MINIMAL_PROXIMITY_CHECK_OTP_LENGTH = 6;
+
+    /**
+     * When asking for server status, this variable will be returned as application
+     * name.
+     */
+    @Value("${powerauth.service.applicationName}")
+    private String applicationName;
+
+    /**
+     * When asking for server status, this variable will be returned as application
+     * display name.
+     */
+    @Value("${powerauth.service.applicationDisplayName}")
+    private String applicationDisplayName;
+
+    /**
+     * When asking for server status, this variable will be returned as application
+     * system environment (for example, 'dev' or 'prod').
+     */
+    @Value("${powerauth.service.applicationEnvironment}")
+    private String applicationEnvironment;
+
+    /**
+     * If this variable is set to true, server will check credentials client uses
+     * to access the service and compare them with credentials stored in 'pa_integration'
+     * table.
+     */
+    @Value("${powerauth.service.restrictAccess}")
+    private Boolean restrictAccess;
+
+    /**
+     * When a duplicate token ID is encountered during the token generation, how
+     * many times generate a new one.
+     */
+    @Value("${powerauth.service.crypto.generateTokenIdIterations}")
+    @Min(1)
+    private int generateTokenIdIterations;
+
+    /**
+     * When a duplicate operation ID is encountered, how many times generate a new one.
+     */
+    @Value("${powerauth.service.crypto.generateOperationIterations}")
+    @Min(1)
+    private int generateOperationIterations;
+
+    /**
+     * How many milliseconds should be CREATED or PENDING_COMMIT record usable for
+     * completing the activation.
+     */
+    @Value("${powerauth.service.crypto.activationValidityInMilliseconds}")
+    @Min(0)
+    private int activationValidityBeforeActive;
+
+    /**
+     * How many milliseconds should the activation cleanup job look to the past.
+     */
+    @Value("${powerauth.service.scheduled.job.activationsCleanup.lookBackInMilliseconds:3600000}")
+    @Min(0)
+    private int activationsCleanupLookBackInMilliseconds;
+
+    /**
+     * How many failed authentication code verifications cause activation record blocking. The maximum supported value is 64.
+     */
+    @Value("${powerauth.service.crypto.authenticationCodeMaxFailedAttempts}")
+    @Min(0)
+    @Max(64)
+    private long authenticationCodeMaxFailedAttempts;
+
+    /**
+     * Whether the temporary activation block feature is enabled. When enabled, the activation that reaches
+     * the maximum number of failed attempts is blocked only for a limited time and automatically returned
+     * to ACTIVE state. Disabling this flag does not affect the lifting of temporary blocks that were
+     * already set in the database.
+     */
+    @Value("${powerauth.service.crypto.temporaryActivationBlock.enabled:false}")
+    private boolean temporaryBlockEnabled;
+
+    /**
+     * Base period (in milliseconds) for the temporary activation block. The first temporary block lasts
+     * this many milliseconds; each consecutive block is prolonged by the configured multiplier.
+     * Default is 300 000 ms (5 minutes).
+     */
+    @Value("${powerauth.service.crypto.temporaryActivationBlock.periodInMilliseconds:300000}")
+    @Min(1)
+    private long temporaryBlockPeriodInMilliseconds;
+
+    /**
+     * Multiplier used to extend the temporary block period for consecutive blocks. With the default value
+     * of 2 the n-th consecutive temporary block lasts {@code periodInMilliseconds * 2^(n-1)} milliseconds.
+     * Must be at least 1.
+     */
+    @Value("${powerauth.service.crypto.temporaryActivationBlock.multiplier:2}")
+    @Min(1)
+    private int temporaryBlockMultiplier;
+
+    /**
+     * When validating the authentication code, how many iterations ahead to look in case authentication code verification fails for the first
+     * counter value. The maximum supported value is 64.
+     */
+    @Value("${powerauth.service.crypto.authenticationCodeValidationLookahead}")
+    @Min(1)
+    @Max(64)
+    private long authenticationCodeValidationLookahead;
+
+    /**
+     * When validating the offline (or decimalized) authentication code, how many digits should a factor-related component have.
+     */
+    @Value("${powerauth.service.crypto.offlineAuthenticationCodeComponentLength}")
+    @Min(4)
+    @Max(8)
+    private int offlineAuthenticationCodeComponentLength;
+
+    /**
+     * Expiration of timestamps for ECIES and MAC token requests for protocol version 3.2+.
+     */
+    @Value("${powerauth.service.crypto.requestExpirationInMilliseconds}")
+    @DurationMin(millis = 0)
+    private Duration requestExpiration;
+
+    /**
+     * Expiration of timestamps for ECIES and MAC token requests for protocol version 3.1 or older.
+     */
+    @Value("${powerauth.service.crypto.requestExpirationInMillisecondsExtended}")
+    @DurationMin(millis = 0)
+    private Duration requestExpirationExtended;
+
+    /**
+     * Minimum cryptography protocol version which is supported.
+     */
+    @Value("${powerauth.service.crypto.minSupportedProtocolVersion:3}")
+    @Min(3)
+    @Max(4)
+    private int minSupportedProtocolVersion;
+
+    /**
+     * Whether HTTP proxy is enabled for outgoing HTTP requests.
+     */
+    @Value("${powerauth.service.http.proxy.enabled}")
+    private Boolean httpProxyEnabled;
+
+    /**
+     * HTTP proxy host.
+     */
+    @Value("${powerauth.service.http.proxy.host}")
+    private String httpProxyHost;
+
+    /**
+     * HTTP proxy port.
+     */
+    @Value("${powerauth.service.http.proxy.port}")
+    private Integer httpProxyPort;
+
+    /**
+     * HTTP proxy username, use only in case HTTP proxy authentication is required.
+     */
+    @Value("${powerauth.service.http.proxy.username}")
+    private String httpProxyUsername;
+
+    /**
+     * HTTP proxy password, use only in case HTTP proxy authentication is required.
+     */
+    @Value("${powerauth.service.http.proxy.password}")
+    private String httpProxyPassword;
+
+    /**
+     * HTTP connection timeout.
+     */
+    @Value("${powerauth.service.http.connection.timeout}")
+    private Duration httpConnectionTimeout = Duration.ofSeconds(5);
+
+    /**
+     * HTTP response timeout.
+     */
+    @Value("${powerauth.service.http.response.timeout}")
+    private Duration httpResponseTimeout = Duration.ofSeconds(60);
+
+    /**
+     * HTTP connection max idle time.
+     */
+    @Value("${powerauth.service.http.connection.max-idle-time}")
+    private Duration httpMaxIdleTime;
+
+    /**
+     * Master DB encryption key for algorithm AES_HMAC.
+     */
+    @Value("${powerauth.server.db.master.encryption.key}")
+    private String masterDbEncryptionKey;
+
+    /**
+     * Master DB encryption key for algorithm AEAD_KMAC.
+     */
+    @Value("${powerauth.server.db.master.encryption.aead-kmac.key}")
+    private String masterDbEncryptionKeyAeadKmac;
+
+    /**
+     * Default DB encryption algorithm.
+     */
+    @Value("${powerauth.server.db.master.encryption.algorithm:AEAD_KMAC}")
+    private EncryptionAlgorithm dbEncryptionAlgorithm;
+
+    /**
+     * If enabled, then the vault encryption key can be acquired also after the successful biometric authentication.
+     */
+    @Value("${powerauth.service.secureVault.enableBiometricAuthentication}")
+    private boolean secureVaultBiometricAuthenticationEnabled;
+
+    /**
+     * Length of OTP generated for proximity check.
+     */
+    @Value("${powerauth.service.proximity-check.otp.length:8}")
+    private int proximityCheckOtpLength;
+
+    /**
+     * Step duration used for generating and validating TOTP for the proximity check.
+     */
+    @Value("${powerauth.service.proximity-check.otp.step-duration:30s}")
+    private Duration proximityCheckStepDuration;
+
+    /**
+     * Acceptable TOTP transmission delay as the number of past time-steps used for validating TOTP for the proximity check.
+     */
+    @Value("${powerauth.service.proximity-check.otp.step-count:1}")
+    private int proximityCheckStepCount;
+
+    /**
+     * Number of operation that will be set expired in the single scheduled job run.
+     */
+    @Value("${powerauth.service.scheduled.job.expireOperationsLimit:100}")
+    private int expireOperationsLimit;
+
+    /**
+     * Validity of the temporary key pair in milliseconds.
+     */
+    @Value("${powerauth.service.temporaryKey.validity:300000}")
+    @DurationMin(millis = 0)
+    private Duration temporaryKeyValidity;
+
+    /**
+     * Customize the Spring Boot auto-configured {@code jacksonJsonMapper}.
+     * @return Customizer applied to the auto-configured JSON mapper.
+     */
+    @Bean
+    public JsonMapperBuilderCustomizer jsonMapperBuilderCustomizer() {
+        return builder -> builder.enable(SerializationFeature.INDENT_OUTPUT);
+    }
+
+    /**
+     * Get application name, usually used as a "unique code" for the application within
+     * a server infrastructure.
+     *
+     * @return Application name.
+     */
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    /**
+     * Set application name.
+     *
+     * @param applicationName Application name.
+     */
+    public void setApplicationName(String applicationName) {
+        this.applicationName = applicationName;
+    }
+
+    /**
+     * Get application display name, usually used as a "visual representation" of the
+     * application within a server infrastructure.
+     *
+     * @return Application display name.
+     */
+    public String getApplicationDisplayName() {
+        return applicationDisplayName;
+    }
+
+    /**
+     * Set application display name.
+     *
+     * @param applicationDisplayName Application display name.
+     */
+    public void setApplicationDisplayName(String applicationDisplayName) {
+        this.applicationDisplayName = applicationDisplayName;
+    }
+
+    /**
+     * Get the application environment name.
+     *
+     * @return Application environment name.
+     */
+    public String getApplicationEnvironment() {
+        return applicationEnvironment;
+    }
+
+    /**
+     * Set the application environment name.
+     *
+     * @param applicationEnvironment Application environment name.
+     */
+    public void setApplicationEnvironment(String applicationEnvironment) {
+        this.applicationEnvironment = applicationEnvironment;
+    }
+
+    /**
+     * Get the value of a flag that indicates that access to the PA2.0 Server should be restricted
+     * to predefined integrations.
+     *
+     * @return Flag with access restriction information.
+     */
+    public Boolean getRestrictAccess() {
+        return restrictAccess;
+    }
+
+    /**
+     * Set the value of a flag that indicates that access to the PA2.0 Server should be restricted
+     * to predefined integrations.
+     *
+     * @param restrictAccess Flag with access restriction information.
+     */
+    public void setRestrictAccess(Boolean restrictAccess) {
+        this.restrictAccess = restrictAccess;
+    }
+
+    /**
+     * Get number of token ID generation attempts in case of collision.
+     * @return Retry iteration count (10, by default).
+     */
+    public int getGenerateTokenIdIterations() {
+        return generateTokenIdIterations;
+    }
+
+    /**
+     * Set number of token ID generation attempts in case of collision.
+     * @param generateTokenIdIterations Retry iteration count (10, by default).
+     */
+    public void setGenerateTokenIdIterations(int generateTokenIdIterations) {
+        this.generateTokenIdIterations = generateTokenIdIterations;
+    }
+
+    /**
+     * Get number of operation ID generation attempts in case of collision.
+     * @return Retry iteration count (10, by default).
+     */
+    public int getGenerateOperationIterations() {
+        return generateOperationIterations;
+    }
+
+    /**
+     * Set number of operation ID generation attempts in case of collision.
+     * @param generateOperationIterations Retry iteration count (10, by default).
+     */
+    public void setGenerateOperationIterations(int generateOperationIterations) {
+        this.generateOperationIterations = generateOperationIterations;
+    }
+
+    /**
+     * Get default number of maximum failed attempts.
+     * @return Maximum failed attempts (5, by default).
+     */
+    public long getAuthenticationCodeMaxFailedAttempts() {
+        return authenticationCodeMaxFailedAttempts;
+    }
+
+    /**
+     * Set default number of maximum failed attempts.
+     * @param authenticationCodeMaxFailedAttempts Maximum failed attempts (5, by default).
+     */
+    public void setAuthenticationCodeMaxFailedAttempts(long authenticationCodeMaxFailedAttempts) {
+        this.authenticationCodeMaxFailedAttempts = authenticationCodeMaxFailedAttempts;
+    }
+
+    /**
+     * Get length of the period of activation record validity during activation.
+     * @return How long the activation is valid before it expires (2 minutes, in milliseconds, by default).
+     */
+    public int getActivationValidityBeforeActive() {
+        return activationValidityBeforeActive;
+    }
+
+    /**
+     * Get length of the period of activation record validity during activation.
+     * @param activationValidityBeforeActive How long the activation is valid before it expires (2 minutes, in milliseconds by defaults).
+     */
+    public void setActivationValidityBeforeActive(int activationValidityBeforeActive) {
+        this.activationValidityBeforeActive = activationValidityBeforeActive;
+    }
+
+    /**
+     * Get look-back milliseconds for activation cleanup.
+     * @return How long the activation cleanup job should look back in time.
+     */
+    public int getActivationsCleanupLookBackInMilliseconds() {
+        return activationsCleanupLookBackInMilliseconds;
+    }
+
+    /**
+     * Set look-back milliseconds for activation cleanup.
+     * @param activationsCleanupLookBackInMilliseconds How long the activation cleanup job should look back in time.
+     */
+    public void setActivationsCleanupLookBackInMilliseconds(int activationsCleanupLookBackInMilliseconds) {
+        this.activationsCleanupLookBackInMilliseconds = activationsCleanupLookBackInMilliseconds;
+    }
+
+    /**
+     * Get the authentication code validation lookahead.
+     * @return Authentication code validation lookahead.
+     */
+    public long getAuthenticationCodeValidationLookahead() {
+        return authenticationCodeValidationLookahead;
+    }
+
+    /**
+     * Set the authentication code validation lookahead.
+     * @param authenticationCodeValidationLookahead Authentication code validation lookahead.
+     */
+    public void setAuthenticationCodeValidationLookahead(long authenticationCodeValidationLookahead) {
+        this.authenticationCodeValidationLookahead = authenticationCodeValidationLookahead;
+    }
+
+    /**
+     * Get offline authentication code factor-related component length.
+     * @return Factor-related component length.
+     */
+    public int getOfflineAuthenticationCodeComponentLength() {
+        return offlineAuthenticationCodeComponentLength;
+    }
+
+    /**
+     * Set offline authentication code factor-related component length.
+     * @param offlineAuthenticationCodeComponentLength Factor-related component length.
+     */
+    public void setOfflineAuthenticationCodeComponentLength(int offlineAuthenticationCodeComponentLength) {
+        this.offlineAuthenticationCodeComponentLength = offlineAuthenticationCodeComponentLength;
+    }
+
+    /**
+     * Get expiration for ECIES and MAC token requests.
+     * @return Expiration for ECIES and MAC token requests.
+     */
+    public Duration getRequestExpiration() {
+        return requestExpiration;
+    }
+
+    /**
+     * Set expiration for ECIES and MAC token requests.
+     * @param requestExpiration Expiration for ECIES and MAC token requests.
+     */
+    public void setRequestExpiration(Duration requestExpiration) {
+        this.requestExpiration = requestExpiration;
+    }
+
+    /**
+     * Get expiration for ECIES and MAC token requests for protocol versions 3.1 and older.
+     * @return Expiration for ECIES and MAC token requests for protocol versions 3.1 and older.
+     */
+    public Duration getRequestExpirationExtended() {
+        return requestExpirationExtended;
+    }
+
+    /**
+     * Set expiration for ECIES and MAC token requests for protocol versions 3.1 and older.
+     * @param requestExpirationExtended Expiration for ECIES and MAC token requests for protocol versions 3.1 and older.
+     */
+    public void setRequestExpirationExtended(Duration requestExpirationExtended) {
+        this.requestExpirationExtended = requestExpirationExtended;
+    }
+
+    /**
+     * Get whether HTTP proxy is enabled.
+     * @return Whether HTTP proxy is enabled.
+     */
+    public Boolean getHttpProxyEnabled() {
+        return httpProxyEnabled;
+    }
+
+    /**
+     * Set whether HTTP proxy is enabled.
+     * @param httpProxyEnabled Whether HTTP proxy is enabled.
+     */
+    public void setHttpProxyEnabled(Boolean httpProxyEnabled) {
+        this.httpProxyEnabled = httpProxyEnabled;
+    }
+
+    /**
+     * Get HTTP proxy host.
+     * @return HTTP proxy host.
+     */
+    public String getHttpProxyHost() {
+        return httpProxyHost;
+    }
+
+    /**
+     * Set HTTP proxy host.
+     * @param httpProxyHost HTTP proxy host.
+     */
+    public void setHttpProxyHost(String httpProxyHost) {
+        this.httpProxyHost = httpProxyHost;
+    }
+
+    /**
+     * Get HTTP proxy port.
+     * @return HTTP proxy port.
+     */
+    public Integer getHttpProxyPort() {
+        return httpProxyPort;
+    }
+
+    /**
+     * Set HTTP proxy port.
+     * @param httpProxyPort HTTP proxy port.
+     */
+    public void setHttpProxyPort(Integer httpProxyPort) {
+        this.httpProxyPort = httpProxyPort;
+    }
+
+    /**
+     * Get HTTP proxy username.
+     * @return HTTP proxy username.
+     */
+    public String getHttpProxyUsername() {
+        return httpProxyUsername;
+    }
+
+    /**
+     * Set HTTP proxy username.
+     * @param httpProxyUsername HTTP proxy username.
+     */
+    public void setHttpProxyUsername(String httpProxyUsername) {
+        this.httpProxyUsername = httpProxyUsername;
+    }
+
+    /**
+     * Get HTTP proxy password.
+     * @return HTTP proxy password.
+     */
+    public String getHttpProxyPassword() {
+        return httpProxyPassword;
+    }
+
+    /**
+     * Set HTTP proxy password.
+     * @param httpProxyPassword HTTP proxy password.
+     */
+    public void setHttpProxyPassword(String httpProxyPassword) {
+        this.httpProxyPassword = httpProxyPassword;
+    }
+
+    /**
+     * Get master DB encryption key.
+     * @return Master DB encryption key.
+     */
+    public String getMasterDbEncryptionKey() {
+        return masterDbEncryptionKey;
+    }
+
+    /**
+     * Set master DB encryption key.
+     * @param masterDbEncryptionKey Master DB encryption key.
+     */
+    public void setMasterDbEncryptionKey(String masterDbEncryptionKey) {
+        this.masterDbEncryptionKey = masterDbEncryptionKey;
+    }
+
+    /**
+     * Get whether vault encryption key can be acquired also after the successful biometric authentication.
+     * @return {@code true} if vault encryption key can be acquired also after the successful biometric authentication.
+     */
+    public boolean isSecureVaultBiometricAuthenticationEnabled() {
+        return secureVaultBiometricAuthenticationEnabled;
+    }
+
+    /**
+     * Set whether vault encryption key can be acquired also after the successful biometric authentication.
+     * @param secureVaultBiometricAuthenticationEnabled If {@code true}, then vault encryption key can be acquired
+     *                                                  also after the successful biometric authentication.
+     */
+    public void setSecureVaultBiometricAuthenticationEnabled(boolean secureVaultBiometricAuthenticationEnabled) {
+        this.secureVaultBiometricAuthenticationEnabled = secureVaultBiometricAuthenticationEnabled;
+    }
+
+    /**
+     * Get length of OTP generated for proximity check.
+     *
+     * @return length of OTP
+     */
+    public int getProximityCheckOtpLength() {
+        return proximityCheckOtpLength;
+    }
+
+    /**
+     * Set length of OTP generated for proximity check.
+     *
+     * @param proximityCheckOtpLength length of OTP
+     */
+    public void setProximityCheckOtpLength(int proximityCheckOtpLength) {
+        this.proximityCheckOtpLength = proximityCheckOtpLength;
+    }
+
+    @PostConstruct
+    void validateProximityConfiguration() {
+        Assert.state(proximityCheckOtpLength >= MINIMAL_PROXIMITY_CHECK_OTP_LENGTH,
+                "Proximity check OTP length %d is smaller then required minimal %d".formatted(proximityCheckOtpLength, MINIMAL_PROXIMITY_CHECK_OTP_LENGTH));
+    }
+
+    @PostConstruct
+    void validateReplayConfiguration() {
+        Assert.state(temporaryKeyValidity.toMillis() <= requestExpiration.toMillis(),
+                "Temporary key validity %d ms exceeds request expiration %d ms"
+                        .formatted(temporaryKeyValidity.toMillis(), requestExpiration.toMillis())
+        );
+    }
+
+    @PostConstruct
+    void validateDbEncryptionConfiguration() {
+        if (dbEncryptionAlgorithm == EncryptionAlgorithm.NO_ENCRYPTION) {
+            logger.warn("Database record encryption is disabled.");
+            return;
+        }
+        if (dbEncryptionAlgorithm == EncryptionAlgorithm.AES_HMAC) {
+            logger.warn("Legacy encryption algorithm AES_HMAC is used for database record encryption.");
+            return;
+        }
+        if (!StringUtils.hasText(masterDbEncryptionKeyAeadKmac)) {
+            throw new IllegalStateException("""
+                Master DB encryption key is not configured for default encryption algorithm AEAD_KMAC.
+                Configure property 'powerauth.server.db.master.encryption.aead-kmac.key' with a 256-bit Base64 encoded key.
+
+                For more details, see the PowerAuth server 2.0.0 migration guide.
+                """);
+        }
+        final byte[] decodedKey;
+        try {
+            decodedKey = Base64.getDecoder().decode(masterDbEncryptionKeyAeadKmac);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("""
+                Master DB encryption key is not a valid Base-64 encoded key for AEAD_KMAC.
+                Check configuration of property 'powerauth.server.db.master.encryption.aead-kmac.key'.
+                """, e);
+        }
+        if (decodedKey.length != 32) {
+            throw new IllegalStateException("""
+                Master DB encryption key has incorrect length for AEAD_KMAC.
+                Expected a 256-bit Base64 encoded key configured in property 'powerauth.server.db.master.encryption.aead-kmac.key'.
+                """);
+        }
+    }
+
+}

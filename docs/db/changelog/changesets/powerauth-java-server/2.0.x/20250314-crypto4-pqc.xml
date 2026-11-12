@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="1" logicalFilePath="powerauth-java-server/2.0.x/20250314-crypto4-pqc.xml" author="Roman Strobl">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="pa_activation" columnName="crypto_algorithm" />
+            </not>
+        </preConditions>
+        <comment>Add column crypto_algorithm to pa_activation table</comment>
+        <addColumn tableName="pa_activation">
+            <column name="crypto_algorithm" type="varchar(32)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2" logicalFilePath="powerauth-java-server/2.0.x/20250314-crypto4-pqc.xml" author="Roman Strobl">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="pa_activation" columnName="shared_secret" />
+                <columnExists tableName="pa_activation" columnName="shared_secret_encryption" />
+            </not>
+        </preConditions>
+        <comment>Add new columns for crypto4 keys to pa_activation table</comment>
+        <addColumn tableName="pa_activation">
+            <column name="shared_secret" type="varchar(255)"/>
+            <column name="shared_secret_encryption" type="integer" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

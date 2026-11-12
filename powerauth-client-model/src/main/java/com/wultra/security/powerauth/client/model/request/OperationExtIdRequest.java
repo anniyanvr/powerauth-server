@@ -18,6 +18,11 @@
 
 package com.wultra.security.powerauth.client.model.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,24 +30,21 @@ import java.util.List;
  *
  * @author Petr Dvorak, petr@wultra.com
  */
+@Data
 public class OperationExtIdRequest {
 
+    @Schema(description = "External identifier of the operation")
+    @NotBlank(message = "External ID must not be empty when requesting operation lookup by external ID")
     private String externalId;
-    private List<String> applications;
 
-    public String getExternalId() {
-        return externalId;
-    }
+    @Schema(description = "Associated application identifiers")
+    @NotEmpty(message = "Application ID list must not be empty when requesting operation lookup by external ID")
+    private List<@NotBlank String> applications = new ArrayList<>();
 
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-    }
+    @Min(0)
+    private Integer pageNumber;
 
-    public List<String> getApplications() {
-        return applications;
-    }
+    @Min(1)
+    private Integer pageSize;
 
-    public void setApplications(List<String> applications) {
-        this.applications = applications;
-    }
 }

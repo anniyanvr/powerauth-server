@@ -36,7 +36,7 @@ Java 11 no longer supports installing Bouncy Castle using library extension mech
 longer contains the Bouncy Castle library in war files to avoid classloader issues in some web containers (e.g. Tomcat).
 
 The Bouncy Castle provider needs to be installed using mechanism supported by the web container.
-See the [Installing Bouncy Castle](./Installing-Bouncy-Castle.md#installing-on-java-11) chapter in documentation.
+See the [Installing Bouncy Castle](./Installing-Bouncy-Castle.md) chapter in documentation.
 
 ### Tomcat on Java 11
 
@@ -308,12 +308,12 @@ After [fixing the Spring bean naming conventions](https://github.com/wultra/powe
 
 ### Offline Signatures and Biometry
 
-The [VerifyOfflineSignature](WebServices-Methods.md#method-verifyofflinesignature) method has been updated to specify whether biometry is allowed in offline mode instead of specifying the used signature type directly. The PowerAuth client `verifyOfflineSignature` method has been updated to reflect the change of parameters. If you use offline mode verification using PowerAuth API, please update the SOAP method call.
+The [VerifyOfflineSignature](WebServices-Methods-V3.md#method-verifyofflinesignature) method has been updated to specify whether biometry is allowed in offline mode instead of specifying the used signature type directly. The PowerAuth client `verifyOfflineSignature` method has been updated to reflect the change of parameters. If you use offline mode verification using PowerAuth API, please update the SOAP method call.
 
 ### External User Identifier
 
-The [CommitActivation](WebServices-Methods.md#method-commitactivation), [RemoveActivation](WebServices-Methods.md#method-removeactivation), [BlockActivation](WebServices-Methods.md#method-blockactivation) and [UnblockActivation](WebServices-Methods.md#method-unblockactivation) methods have been updated to allow specification of external user identifier. The related PowerAuth client methods have been updated to reflect the change of parameters. If you use any of these methods, please update the SOAP method call.
+The [CommitActivation](WebServices-Methods-V3.md#method-commitactivation), [RemoveActivation](WebServices-Methods-V3.md#method-removeactivation), [BlockActivation](WebServices-Methods-V3.md#method-blockactivation) and [UnblockActivation](WebServices-Methods-V3.md#method-unblockactivation) methods have been updated to allow specification of external user identifier. The related PowerAuth client methods have been updated to reflect the change of parameters. If you use any of these methods, please update the SOAP method call.
 
 ### Revoking Recovery Codes on Activation Removal
 
-We added an optional `revokeRecoveryCodes` attribute to [activation removal service call](WebServices-Methods.md#method-removeactivation). This flag indicates if recovery codes that are associated with removed activation should be also revoked. By default, the value of the flag is `false`, hence omitting the flag results in the same behavior as before this change. 
+We added an optional `revokeRecoveryCodes` attribute to [activation removal service call](WebServices-Methods-V3.md#method-removeactivation). This flag indicates if recovery codes that are associated with removed activation should be also revoked. By default, the value of the flag is `false`, hence omitting the flag results in the same behavior as before this change. 

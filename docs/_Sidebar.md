@@ -4,6 +4,8 @@
 - [Deploy PowerAuth Server](./Deploying-PowerAuth-Server.md)
 - [Migration Instructions](./Migration-Instructions.md)
 - [Configuration Properties](./Configuration-Properties.md)
+- [Monitoring](./PowerAuth-Server-Monitoring.md)
+- [Artifact Signing](./Artifact-Signing.md)
 
 **Integration Tutorials**
 
@@ -12,12 +14,15 @@
 
 **Implementation Tutorials**
 
-- [Authentication in Mobile Banking Apps (SCA)](https://developers.wultra.com/products/mobile-security-suite/develop/tutorials/Authentication-in-Mobile-Apps)
-- [Verifying PowerAuth Signatures On The Server](https://developers.wultra.com/products/mobile-security-suite/develop/tutorials/Manual-Signature-Verification)
+- [Mobile-First Authentication in Banking (SCA)](https://developers.wultra.com/tutorials/posts/Mobile-First-Authentication/)
+- [Verifying Authentication Codes On The Server](https://developers.wultra.com/tutorials/posts/Manual-Signature-Verification/)
 
 **Reference Manual**
 
-- [Web Services - Methods](WebServices-Methods.md)
+- [Web Services - Methods (V4)](WebServices-Methods-V4.md)
+- [Web Services - Methods (V3)](WebServices-Methods-V3.md)
+- [FIDO2 API](FIDO2-API.md)
+- [Telemetry API](Telemetry-API.md)
 - [Database Structure](./Database-Structure.md)
 - [Error Codes](./Server-Error-Codes.md)
 
@@ -27,12 +32,11 @@
 - [Deploying PowerAuth Admin on JBoss/Wildfly](./Admin-Deploying-Wildfly.md)
 - [Setting Up LDAP Authentication](./Setting-Up-LDAP-Authentication.md)
 - [Setting Up AD Authentication](./Setting-Up-Active-Directory-Authentication.md)
-- [Configuration of Activation Recovery](./Activation-Recovery.md)
 - [Configuration Properties](./Configuration-Properties-Admin.md)
 
 **Advanced Topics**
 
 - [Encrypting DB Records](./Encrypting-Records-in-Database.md)
-- [Offline Signatures](./Offline-Signatures.md)
+- [Offline Authentication Codes](./Offline-Authentication-Codes)
 - [Integrating with HashiCorp Vault](./Using-HashiCorp-Vault.md)
 - [Database Sizing](./Database-Sizing.md)

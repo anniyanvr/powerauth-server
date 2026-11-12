@@ -1,0 +1,163 @@
+# Migration from 2.0.x to 2.1.0
+
+## REST API Changes
+
+### POST /fido2/assertions
+
+The `$.requestObject.applicationId` attribute used to verify the challenge can be approved by given application is no longer mandatory. If not present, the user ID retrieved from `$.requestObject.response.userHandle` is used to determine the application ID.
+
+### POST /fido2/assertions/challenge
+
+The response contains a new `$.responseObject.operationId` attribute representing the operation ID the assertion is associated with.
+
+#### POST /rest/v4/activation/status
+
+The request contains a new parameter `includeStatusBlob` which controls whether the activation status blob is included in the response. By default, the status blob is included.
+
+### POST /rest/v3/signature/list
+
+The data type of the `signatureType` field in each element of the response list has been updated to `String`. The field
+values remain unchanged and continue to represent the same set of signature types in the existing format.
+
+### POST /rest/v4/audit/list
+
+The data type of the `signatureType` field in each element of the response list has been updated to `String`. The field
+values remain unchanged and continue to represent the same set of signature types in the existing format.
+
+## Database Changes
+
+For convenience, you can use liquibase for your database migration.
+
+For manual changes use SQL scripts:
+
+- [PostgreSQL script](sql/postgresql/migration_2.0.0_2.1.0.sql)
+- [Oracle script](sql/oracle/migration_2.0.0_2.1.0.sql)
+- [MSSQL script](sql/mssql/migration_2.0.0_2.1.0.sql)
+
+### `pa_activation` Table
+
+This migration enforces uniqueness of activation codes at the database level and aligns the `activation_code` column definition with the JPA entity.
+
+The changes are applied in the following order:
+
+1. **Backfill NULL `activation_code` values** _(legacy databases only)_ — rows with a `NULL` activation code are updated with a unique `LEGACY-<uuid>` placeholder. Automatically **skipped** if no NULL values exist, which is the expected case for all databases managed by Liquibase since 1.4.x.
+
+2. _(MSSQL only)_ **Drop the old non-unique index** `pa_activation_code` — MSSQL blocks `ALTER COLUMN` on a column with a dependent index (error 5074), so the index must be removed first. Automatically **skipped** on PostgreSQL and Oracle.
+
+3. **Add `NOT NULL` constraint** on `activation_code` — aligns the schema with the JPA entity definition. Fast operation on MSSQL (metadata-only when no NULLs exist); full table scan on PostgreSQL and Oracle.
+
+4. **Add unique constraint** `pa_activation_code_application_uk` on `(activation_code, application_id)` — enforces uniqueness at the database level per application, replacing the previous application-level check. **Index build — can take significant time on large tables** (see performance data below).
+
+5. _(PostgreSQL, Oracle)_ **Drop the old non-unique index** `pa_activation_code` — replaced by the unique constraint above (near-instant). Automatically **skipped** on MSSQL (already dropped in step 2).
+
+> ⚠️ **MSSQL: maintenance window required.**
+> Steps 2–4 leave `activation_code` without an index: the old index is dropped in step 2 and a new one is not created until step 4.
+> During this window, queries filtering on `activation_code` will perform a full table scan.
+> **A maintenance window is required when running this migration on MSSQL.**
+
+> ⚠️ **PostgreSQL / Oracle: maintenance window recommended.**
+> Step 4 (index build) locks the table and can take several minutes on large deployments (see performance data below).
+> Plan a maintenance window before upgrading the application.
+>
+> Alternatively, on PostgreSQL you can create the unique index **without locking** using `CONCURRENTLY` before the migration runs (see manual steps below). Liquibase will then skip the index build in step 4.
+
+> ⚠️ **Legacy databases with NULL `activation_code` values.**
+> Step 1 will UPDATE any rows with NULL `activation_code`.
+> If you have a large number of such rows and want to control this operation separately
+> (e.g., run it with custom batching or during off-hours), execute the following SQL **before**
+> running the Liquibase migration:
+>
+> _PostgreSQL:_
+> ```sql
+> UPDATE pa_activation SET activation_code = 'LEGACY-' || gen_random_uuid()::text WHERE activation_code IS NULL;
+> ```
+> _Oracle:_
+> ```sql
+> UPDATE pa_activation SET activation_code = 'LEGACY-' || LOWER(RAWTOHEX(SYS_GUID())) WHERE activation_code IS NULL;
+> ```
+> _MSSQL:_
+> ```sql
+> UPDATE pa_activation SET activation_code = 'LEGACY-' + LOWER(CONVERT(varchar(36), NEWID())) WHERE activation_code IS NULL;
+> ```
+> Once done, Liquibase will detect no NULLs remain and automatically skip step 1.
+
+#### Performance Reference
+
+Index build time measured on a 10M-row table:
+
+| Database | ADD UNIQUE (step 4) |
+|----------|:-------------------:|
+| Oracle 23ai Free | ~7 s |
+| PostgreSQL 18 | ~19 s |
+| Azure SQL Edge 2.0 | ~22 s |
+| MS SQL Server 2022 | ~89 s |
+
+#### Manual Index Creation (Zero-Downtime Option)
+
+To avoid table locking during the migration, you can create the unique index manually **before** running the Liquibase migration. Liquibase will detect the index already exists and skip the index build in step 4.
+
+> ℹ️ Run these statements **before** starting the application upgrade. Ensure step 1 (NULL backfill) has been completed first if your database may contain NULL `activation_code` values.
+
+_PostgreSQL — non-blocking (`CONCURRENTLY`):_
+```sql
+CREATE UNIQUE INDEX CONCURRENTLY pa_activation_code_application_uk
+    ON pa_activation (activation_code, application_id);
+ALTER TABLE pa_activation
+    ADD CONSTRAINT pa_activation_code_application_uk UNIQUE
+    USING INDEX pa_activation_code_application_uk;
+```
+> Note: `CREATE INDEX CONCURRENTLY` cannot run inside a transaction and may take longer than a standard index build, but does not lock the table.
+
+_Oracle — online index build:_
+```sql
+CREATE UNIQUE INDEX pa_activation_code_application_uk
+    ON pa_activation (activation_code, application_id) ONLINE;
+ALTER TABLE pa_activation
+    ADD CONSTRAINT pa_activation_code_application_uk UNIQUE (activation_code, application_id)
+    USING INDEX pa_activation_code_application_uk;
+```
+
+_MSSQL — online index build:_
+```sql
+-- Step 2 (drop old index) must be done first — see migration step 2 above.
+CREATE UNIQUE INDEX pa_activation_code_application_uk
+    ON pa_activation (activation_code, application_id)
+    WITH (ONLINE = ON);
+ALTER TABLE pa_activation
+    ADD CONSTRAINT pa_activation_code_application_uk UNIQUE (activation_code, application_id);
+```
+> Note: `WITH (ONLINE = ON)` requires Enterprise or Developer edition of SQL Server.
+
+### `audit_log` Table
+
+Added a new indexed column `subject_id` holding an identifier linking the audit record to an entity it is related to (e.g. user ID for user-related audit records).
+
+<!-- begin box warning -->
+The auditing tables may be already updated in your database schema if the database schema is not separated for different PowerAuth applications. In case the column `audit_log.subject_id` and its index `audit_log_subject_id_idx` are already present, you can safely skip this migration step.
+<!-- end -->
+
+## Other Changes
+
+### Removal of Deprecated Signature / Authentication Code Types
+
+Since PowerAuth SDK version 1.7.0, client-side support has been limited to the following signature types
+(referred to in current terminology as authentication code types):
+
+- `POSSESSION`
+- `POSSESSION_KNOWLEDGE`
+- `POSSESSION_BIOMETRY`
+
+The remaining types:
+
+- `KNOWLEDGE`
+- `BIOMETRY`
+- `POSSESSION_KNOWLEDGE_BIOMETRY`
+
+remained available on the server side only for backward compatibility with older SDK versions. As of this release,
+server-side components support for these deprecated types has also been removed.
+
+Any occurrence of a removed signature type stored in the `pa_operation.signature_type` or
+`pa_operation_template.signature_type` columns is now ignored during processing. In the rare case where an operation
+template contains only removed signature types, operations created from that template will not receive any allowed
+signature type and therefore cannot be approved. In such cases, update the affected template to use one of the supported
+signature types. Otherwise, this change is not expected to have practical impact, and no database migration is required.

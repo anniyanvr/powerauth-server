@@ -18,20 +18,20 @@
 
 package com.wultra.security.powerauth.client.model.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 /**
  * Request class for obtaining operation template detail.
  *
  * @author Petr Dvorak, petr@wultra.com
  */
+@Data
 public class OperationTemplateDetailRequest {
 
+    @Schema(description = "Operation template identifier")
+    @NotNull(message = "Operation template identifier must not be null when fetching operation template detail")
     private Long id;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 }

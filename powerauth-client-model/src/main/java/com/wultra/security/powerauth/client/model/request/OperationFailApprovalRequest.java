@@ -18,27 +18,29 @@
 
 package com.wultra.security.powerauth.client.model.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
+ * Request object for operation approval failure.
+ *
  * @author Petr Dvorak, petr@wultra.com
  */
+@Data
 public class OperationFailApprovalRequest {
 
+    @Schema(description = "The identifier of the operation")
+    @NotBlank(message = "Operation ID must not be empty when requesting operation approval failure")
     private String operationId;
-    private final Map<String, String> additionalData = new LinkedHashMap<>();
 
-    public String getOperationId() {
-        return operationId;
-    }
-
-    public void setOperationId(String operationId) {
-        this.operationId = operationId;
-    }
-
-    public Map<String, String> getAdditionalData() {
-        return additionalData;
-    }
+    @Schema(description = "Additional data associated with the operation")
+    @JsonSetter(nulls = Nulls.SKIP)
+    private final Map<String, Object> additionalData = new LinkedHashMap<>();
 
 }

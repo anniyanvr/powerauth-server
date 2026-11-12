@@ -1,0 +1,80 @@
+/*
+ * PowerAuth Server and related software components
+ * Copyright (C) 2021 Wultra s.r.o.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.wultra.security.powerauth.client.model.request;
+
+import com.wultra.security.powerauth.client.model.entity.HttpAuthenticationPrivate;
+import com.wultra.security.powerauth.client.model.enumeration.CallbackUrlType;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Model class representing request for updating callback URL.
+ *
+ * @author Petr Dvorak, petr@wultra.com
+ */
+@Data
+public class UpdateCallbackUrlRequest {
+
+    @Schema(description = "The identifier of the callback")
+    @NotBlank(message = "Callback ID must not be empty when updating a callback")
+    private String id;
+
+    @Schema(description = "The identifier of the application")
+    @NotBlank(message = "Application ID must not be empty when updating a callback")
+    private String applicationId;
+
+    @Schema(description = "Callback name")
+    @NotBlank(message = "Callback name must not be empty when updating a callback")
+    private String name;
+
+    @Schema(description = "Callback type")
+    @NotNull(message = "Callback type must not be null when updating a callback")
+    private CallbackUrlType type;
+
+    @Schema(description = "Callback URL")
+    @NotBlank(message = "Callback URL must not be empty when updating a callback")
+    private String callbackUrl;
+
+    @Schema(description = "Callback attributes")
+    private List<@NotBlank String> attributes = new ArrayList<>();
+
+    @Schema(description = "Callback authentication")
+    private HttpAuthenticationPrivate authentication = new HttpAuthenticationPrivate();
+
+    @DurationMin(message = "Duration must be positive or zero")
+    @Schema(description = "Callback retention period", format = "ISO 8601 Duration", example = "P30D")
+    private Duration retentionPeriod;
+
+    @DurationMin(message = "Duration must be positive or zero")
+    @Schema(description = "Initial backoff time for the callback", format = "ISO 8601 Duration", example = "PT2.5S")
+    private Duration initialBackoff;
+
+    @Min(1)
+    @Schema(description = "Maximum attempts for executing the callback", example = "1")
+    private Integer maxAttempts;
+
+}

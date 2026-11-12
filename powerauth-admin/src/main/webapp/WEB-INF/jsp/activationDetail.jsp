@@ -115,7 +115,7 @@
                             <p>
                                 Created<br>
                                 <span class="black">
-                                    <fmt:formatDate type="both" pattern="yyyy/MM/dd HH:mm:ss" value="${timestampCreated.toGregorianCalendar().time}"/>
+                                    <fmt:formatDate type="both" pattern="yyyy/MM/dd HH:mm:ss" value="${timestampCreated}"/>
                                 </span>
                             </p>
                         </td>
@@ -123,7 +123,7 @@
                             <p>
                                 Last Used<br>
                                 <span class="black">
-                                    <fmt:formatDate type="both" pattern="yyyy/MM/dd HH:mm:ss" value="${timestampLastUsed.toGregorianCalendar().time}"/>
+                                    <fmt:formatDate type="both" pattern="yyyy/MM/dd HH:mm:ss" value="${timestampLastUsed}"/>
                                 </span>
                             </p>
                         </td>
@@ -151,35 +151,57 @@
                         <tr>
                             <c:if test="${platform != null}">
                             <td>
-                                Platform<br>
-                                <c:choose>
-                                    <c:when test="${platform == 'ios'}">
-                                        <span class="black">iOS</span>
-                                    </c:when>
-                                    <c:when test="${platform == 'android'}">
-                                        <span class="black">Android</span>
-                                    </c:when>
-                                    <c:when test="${platform == 'hw'}">
-                                        <span class="black">Hardware Token</span>
-                                    </c:when>
-                                    <c:when test="${platform == 'unknown'}">
-                                        <span class="black">Unknown</span>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <span class="black">${platform}</span>
-                                    </c:otherwise>
-                                </c:choose>
+                                <p>
+                                    Platform<br>
+                                    <c:choose>
+                                        <c:when test="${platform == 'ios'}">
+                                            <span class="black">iOS</span>
+                                        </c:when>
+                                        <c:when test="${platform == 'android'}">
+                                            <span class="black">Android</span>
+                                        </c:when>
+                                        <c:when test="${platform == 'hw'}">
+                                            <span class="black">Hardware Token</span>
+                                        </c:when>
+                                        <c:when test="${platform == 'unknown'}">
+                                            <span class="black">Unknown</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="black">${platform}</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </p>
                             </td>
                             </c:if>
                             <c:if test="${deviceInfo != null}">
                             <td>
-                                User Device Information<br>
-                                <span class="black">
-                                    <c:out value="${deviceInfo}"/>
-                                </span>
+                                <p>
+                                    User Device Information<br>
+                                    <span class="black">
+                                        <c:out value="${deviceInfo}"/>
+                                    </span>
+                                </p>
                             </td>
                             </c:if>
                         </tr>
+                    <tr>
+                        <c:if test="${protocol != null}">
+                            <td>
+                                Protocol<br>
+                                <span class="black">
+                                    <c:out value="${protocol}"/>
+                                </span>
+                            </td>
+                        </c:if>
+                        <c:if test="${externalId != null}">
+                            <td>
+                                External ID<br>
+                                <span class="black">
+                                    <c:out value="${externalId}"/>
+                                </span>
+                            </td>
+                        </c:if>
+                    </tr>
                     <c:if test="${not empty blockedReason}">
                         <tr>
                             <td colspan="2">
@@ -244,48 +266,6 @@
                 </c:otherwise>
             </c:choose>
         </div>
-
-        <c:if test="${not empty recoveryCodes}">
-            <c:forEach items="${recoveryCodes}" var="item">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">Recovery Code</h3>
-                    </div>
-                    <div class="panel-body gray">
-                        <table class="w100">
-                            <tr>
-                                <td>
-                                    <p>
-                                        Activation Code<br>
-                                        <span class="black"><c:out value="${item.recoveryCodeMasked}"/></span>
-                                    </p>
-                                </td>
-                                <td>
-                                    <p>
-                                        Status<br>
-                                        <jsp:include page="recoveryCodeStatusSnippet.jsp">
-                                            <jsp:param value="${item.status}" name="status"/>
-                                        </jsp:include>
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    <c:if test="${item.status != 'REVOKED'}">
-                        <div class="panel-footer">
-                            <form action="${pageContext.request.contextPath}/activation/recovery/revoke/do.submit"
-                                  method="POST" class="pull-right action-revoke">
-                                    <input type="hidden" name="activationId" value="<c:out value="${item.activationId}"/>"/>
-                                    <input type="hidden" name="recoveryCodeId" value="<c:out value="${item.recoveryCodeId}"/>"/>
-                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                    <input type="submit" value="Revoke" class="btn btn-danger"/>
-                            </form>
-                            <div class="clearfix"></div>
-                        </div>
-                    </c:if>
-                </div>
-            </c:forEach>
-        </c:if>
     </div>
 
     <div class="col-md-8">
@@ -397,10 +377,10 @@
                                                     <c:out value="${item.data}"/>
                                                 </span>
                                             </p>
-                                            <c:if test="${not empty item.additionalInfo.entry}">
+                                            <c:if test="${not empty item.additionalInfo}">
                                                 <p class="wrap gray">
                                                     Additional Information<br>
-                                                    <c:forEach var="entry" items="${item.additionalInfo.entry}">
+                                                    <c:forEach var="entry" items="${item.additionalInfo}">
                                                         <span class="black">
                                                             <c:out value="${entry.key}"/>: <c:out value="${entry.value}"/>
                                                         </span>
@@ -438,7 +418,7 @@
                                             <p>
                                                 Date<br>
                                                 <span class="black">
-                                                    <fmt:formatDate type="both" pattern="yyyy/MM/dd HH:mm:ss" value="${item.timestampCreated.toGregorianCalendar().time}"/>
+                                                    <fmt:formatDate type="both" pattern="yyyy/MM/dd HH:mm:ss" value="${item.timestampCreated}"/>
                                                 </span>
                                             </p>
                                         </td>

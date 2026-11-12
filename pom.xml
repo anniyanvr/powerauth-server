@@ -24,15 +24,15 @@
     <name>powerauth-server-parent</name>
     <description>PowerAuth Server</description>
 
-    <groupId>io.getlime.security</groupId>
+    <groupId>com.wultra.security</groupId>
     <artifactId>powerauth-server-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>2.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.6.8</version>
+        <version>4.1.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -75,57 +75,199 @@
     <modules>
         <module>powerauth-client-model</module>
         <module>powerauth-rest-client-spring</module>
+        <module>powerauth-fido2</module>
+        <module>powerauth-fido2-model</module>
         <module>powerauth-java-server</module>
         <module>powerauth-admin</module>
     </modules>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- Maven Properties and Dependencies -->
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
-        <maven-deploy-plugin.version>3.0.0-M2</maven-deploy-plugin.version>
-        <maven-javadoc-plugin.version>3.4.0</maven-javadoc-plugin.version>
-        <maven-war-plugin.version>3.3.2</maven-war-plugin.version>
-
         <!-- Spring Dependencies -->
-        <spring-cloud-vault.version>3.1.1</spring-cloud-vault.version>
+        <spring-cloud-vault.version>5.0.2</spring-cloud-vault.version>
 
-        <!-- PowerAuth Dependencies -->
-        <powerauth-java-crypto.version>1.4.0-SNAPSHOT</powerauth-java-crypto.version>
-        <powerauth-rest-base.version>1.5.2</powerauth-rest-base.version>
-        <powerauth-audit-base.version>1.5.2</powerauth-audit-base.version>
-        <bcprov-jdk15on.version>1.70</bcprov-jdk15on.version>
+        <!-- Wultra Dependencies -->
+        <powerauth-java-crypto.version>2.3.0-SNAPSHOT</powerauth-java-crypto.version>
+        <wultra-core.version>2.3.0-SNAPSHOT</wultra-core.version>
 
-        <!-- Java 11 Dependencies -->
-        <jaxb-api.version>2.3.1</jaxb-api.version>
-        <jaxb-impl.version>2.3.4</jaxb-impl.version>
-        <jaxb-runtime.version>2.3.4</jaxb-runtime.version>
         <istack-commons-runtime.version>3.0.12</istack-commons-runtime.version>
-        <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
-        <javax.validation.version>2.0.1.Final</javax.validation.version>
-        <saaj-impl.version>1.5.3</saaj-impl.version>
 
         <!-- Documentation Dependencies -->
-        <springdoc-openapi.version>1.6.9</springdoc-openapi.version>
+        <springdoc-openapi-starter-webmvc-ui.version>3.0.3</springdoc-openapi-starter-webmvc-ui.version>
+        <swagger-annotations-jakarta.version>2.2.55</swagger-annotations-jakarta.version>
 
         <!-- Scheduled Job Dependencies -->
-        <schedlock.version>4.36.0</schedlock.version>
-
-        <!-- Test Dependencies -->
-        <junit-jupiter-engine.version>5.8.2</junit-jupiter-engine.version>
-        <h2.version>2.1.212</h2.version>
+        <shedlock.version>7.7.0</shedlock.version>
 
         <!-- Other Dependencies -->
-        <jackson.version>2.13.3</jackson.version>
-        <commons-text.version>1.9</commons-text.version>
+        <commons-text.version>1.15.0</commons-text.version>
+        <logstash.version>9.0</logstash.version>
+        <equalsverifier.version>4.5.2</equalsverifier.version>
+        <zxing.version>3.5.4</zxing.version>
+        <central.publishing.plugin.version>0.12.0</central.publishing.plugin.version>
 
+        <!-- Test dependencies -->
+        <webauthn4j.version>0.32.0.RELEASE</webauthn4j.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- PowerAuth dependencies -->
+            <dependency>
+                <groupId>com.wultra.security</groupId>
+                <artifactId>powerauth-client-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.wultra.security</groupId>
+                <artifactId>powerauth-fido2-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.wultra.security</groupId>
+                <artifactId>powerauth-rest-client-spring</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.wultra.security</groupId>
+                <artifactId>powerauth-java-crypto</artifactId>
+                <version>${powerauth-java-crypto.version}</version>
+            </dependency>
+
+            <!--  Wultra Dependencies  -->
+            <dependency>
+                <groupId>com.wultra.core</groupId>
+                <artifactId>core-bom</artifactId>
+                <version>${wultra-core.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- QR code support -->
+            <dependency>
+                <groupId>com.google.zxing</groupId>
+                <artifactId>zxing-parent</artifactId>
+                <version>${zxing.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>${swagger-annotations-jakarta.version}</version>
+            </dependency>
+
+            <!-- Logging -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash.version}</version>
+            </dependency>
+
+            <!-- Job Scheduling -->
+            <dependency>
+                <groupId>net.javacrumbs.shedlock</groupId>
+                <artifactId>shedlock-bom</artifactId>
+                <version>${shedlock.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- API -->
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta-servlet.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Standalone run -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>nl.jqno.equalsverifier</groupId>
+                <artifactId>equalsverifier</artifactId>
+                <version>${equalsverifier.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>${central.publishing.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>io.github.git-commit-id</groupId>
+                    <artifactId>git-commit-id-maven-plugin</artifactId>
+                    <version>${git-commit-id-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>get-the-git-infos</id>
+                            <goals>
+                                <goal>revision</goal>
+                            </goals>
+                            <phase>initialize</phase>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <projectBuildOutputTimestamp>${maven.build.timestamp}</projectBuildOutputTimestamp>
+                        <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                        <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                        <commitIdGenerationMode>full</commitIdGenerationMode>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -139,21 +281,39 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven-jar-plugin.version}</version>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+                <version>1.18.20.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>${lombok.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/delombok</outputDirectory>
+                    <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+                    <addOutputDirectory>false</addOutputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>delombok</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>${maven-war-plugin.version}</version>
-            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${maven-javadoc-plugin.version}</version>
                 <configuration>
+                    <sourcepath>${project.build.directory}/delombok</sourcepath>
                     <failOnError>false</failOnError>
                 </configuration>
                 <executions>
@@ -170,10 +330,50 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>${maven-deploy-plugin.version}</version>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven-enforcer-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-banned-dependencies</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>org.apache.tomcat.embed:*:*:*:compile</exclude>
+                                        <exclude>org.bouncycastle:bcpkix-jdk15on:*:*:compile</exclude>
+                                        <exclude>org.bouncycastle:bcprov-jdk15on:*:*:compile</exclude>
+                                        <exclude>org.bouncycastle:bcpkix-jdk15on18:*:*:compile</exclude>
+                                        <exclude>org.bouncycastle:bcprov-jdk15on18:*:*:compile</exclude>
+                                        <!-- Force switching to Jakarta EE -->
+                                        <exclude>javax.*</exclude>
+                                        <!-- already on application server or servlet container -->
+                                        <exclude>jakarta.servlet:jakarta.servlet-api:*</exclude>
+                                        <exclude>jakarta.servlet.jsp:jakarta.servlet.jsp-api:*</exclude>
+                                        <!-- replaced by jakarta -->
+                                        <exclude>com.sun.mail</exclude>
+                                        <exclude>com.sun.xml.bind</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <!-- Jakarta API are allowed to be provided -->
+                                        <include>jakarta.*:*:jar:*:provided</include>
+                                        <!-- Not yet migrated to Jakarta -->
+                                        <include>javax.cache:*</include>
+                                    </includes>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
@@ -204,12 +404,87 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+        <id>internal-repository</id>
+        <activation>
+            <property>
+                <name>useInternalRepo</name>
+                <value>true</value>
+            </property>
+        </activation>
+        <properties>
+        </properties>
+            <distributionManagement>
+                <repository>
+                    <id>jfrog-central</id>
+                    <name>Wultra Artifactory-releases</name>
+                    <url>https://wultra.jfrog.io/artifactory/internal-maven-repository</url>
+                </repository>
+                <snapshotRepository>
+                    <id>jfrog-central</id>
+                    <name>Wultra Artifactory-snapshots</name>
+                    <url>https://wultra.jfrog.io/artifactory/internal-maven-repository</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <repositories>
+                <repository>
+                    <id>jfrog-central</id>
+                    <name>Wultra Artifactory-releases</name>
+                    <url>https://wultra.jfrog.io/artifactory/internal-maven-repository</url>
+                </repository>
+                <repository>
+                    <id>central-portal-snapshots</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>public-repository</id>
+            <activation>
+                <property>
+                    <name>!useInternalRepo</name>
+                </property>
+            </activation>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>central-portal-snapshots-distribution</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                </snapshotRepository>
+                <repository>
+                    <id>central-portal-staging-distribution</id>
+                    <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
+            <properties>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>${env.server_id}</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                            <waitMaxTime>${env.wait_max_time}</waitMaxTime>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <repositories>
         <repository>
-            <id>ossrh-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <id>central-portal-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -218,16 +493,5 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh-snapshots-distribution</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh-staging-distribution</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
 </project>

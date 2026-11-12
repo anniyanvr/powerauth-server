@@ -1,0 +1,63 @@
+/*
+ * PowerAuth Server and related software components
+ * Copyright (C) 2021 Wultra s.r.o.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.wultra.security.powerauth.client.model.request;
+
+import com.wultra.security.powerauth.client.model.enumeration.ActivationProtocol;
+import com.wultra.security.powerauth.client.model.enumeration.ActivationStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+import java.util.Set;
+
+/**
+ * Model class representing request for activation list for a given user.
+ *
+ * @author Petr Dvorak, petr@wultra.com
+ */
+@Data
+public class GetActivationListForUserRequest {
+
+    @Schema(description = "The identifier of the user")
+    @NotBlank(message = "User ID must not be empty when requesting activation list for user")
+    private String userId;
+
+    @Schema(description = "The identifier of the application")
+    private String applicationId;
+
+    @Schema(description = "Activation protocols")
+    private Set<ActivationProtocol> protocols = Set.of(ActivationProtocol.FIDO2, ActivationProtocol.POWERAUTH);
+
+    @Schema(description = "The page number to fetch in the paginated result")
+    @Min(0)
+    private Integer pageNumber;
+
+    @Schema(description = "The number of records per page in the paginated result")
+    @Min(1)
+    private Integer pageSize;
+
+    @Schema(description = "Optional statuses according to which activations should be filtered. Return all activations if empty.")
+    private Set<ActivationStatus> activationStatuses;
+
+    @Schema(description = "Whether to include the device public keys of each returned activation. "
+        + "Disabled by default because the keys are large.", defaultValue = "false")
+    private boolean includeDevicePublicKeys = false;
+
+}

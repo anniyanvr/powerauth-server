@@ -1,0 +1,73 @@
+/*
+ * PowerAuth Server and related software components
+ * Copyright (C) 2025 Wultra s.r.o.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+package com.wultra.security.powerauth.app.server;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Field;
+import java.security.Security;
+import java.util.concurrent.ScheduledExecutorService;
+
+/**
+ * Shutdown manager for cleanup of resources during application exit.
+ * Ensures proper shutdown Prometheus component and removal of BouncyCastle provider.
+ *
+ * @author Roman Strobl, roman.strobl@wultra.com
+ */
+@Component
+@AllArgsConstructor
+@Slf4j
+public class ShutdownManager {
+
+    private final MeterRegistry meterRegistry;
+
+    /**
+     * Handles graceful application shutdown.
+     * Called automatically by Spring during context shutdown phase.
+     */
+    @EventListener
+    public void onContextClosed(ContextClosedEvent event) {
+        if (Security.getProvider("BC") != null) {
+            Security.removeProvider("BC");
+            logger.info("BouncyCastle provider removed during shutdown.");
+        }
+
+        if (meterRegistry != null) {
+            // Workaround for Prometheus scheduler thread leak
+            try {
+                Class<?> schedulerClass = Class.forName("io.prometheus.metrics.core.util.Scheduler");
+                Field executorField = schedulerClass.getDeclaredField("executor");
+                executorField.setAccessible(true);
+                ScheduledExecutorService executor = (ScheduledExecutorService) executorField.get(null);
+                if (executor != null && !executor.isShutdown()) {
+                    executor.shutdownNow();
+                    logger.info("Prometheus metrics scheduler executor forcefully shut down.");
+                }
+            } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+                logger.warn("Could not stop Prometheus metrics scheduler", e);
+            }
+        }
+    }
+}

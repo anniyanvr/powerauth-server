@@ -28,7 +28,6 @@
                     <li role="presentation"><a href="#versions" id="tabs-versions" aria-controls="versions" role="tab" data-toggle="tab">Mobile App Config</a></li>
                     <li role="presentation"><a href="#callbacks" id="tabs-callbacks" aria-controls="callbacks" role="tab" data-toggle="tab">Callbacks</a></li>
                     <li role="presentation"><a href="#roles" id="tabs-roles" aria-controls="roles" role="tab" data-toggle="tab">Roles</a></li>
-                    <li role="presentation"><a href="#recovery" id="tabs-recovery" aria-controls="recovery" role="tab" data-toggle="tab">Recovery Settings</a></li>
                 </ul>
 
                 <div id="tab-content" class="tab-content">
@@ -47,24 +46,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-sm-4">
-                                            <div class="panel panel-default">
-                                                <div class="panel-heading">
-                                                    <h3 class="panel-title btn-sm pull-left">Master Server Public Key</h3>
-                                                    <button class="btn btn-default btn-clipboard pull-right" type="button" data-clipboard-text="<c:out value="${masterPublicKey}"/>">
-                                                        <span class="glyphicon glyphicon-copy"></span>
-                                                    </button>
-                                                    <div class="clearfix"></div>
-                                                </div>
-                                                <div class="panel-body">
-                                                    <div class="code wrap">
-                                                        <c:out value="${masterPublicKey}"/>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-sm-8">
+                                        <div class="col-sm-12">
                                             <div class="panel panel-default">
                                                 <div class="panel-heading">
                                                     <h3 class="panel-title btn-sm pull-left">Application Versions</h3>
@@ -76,8 +58,7 @@
                                                         <thead>
                                                         <tr>
                                                             <th>Version</th>
-                                                            <th>Application Key</th>
-                                                            <th>Application Secret</th>
+                                                            <th>Mobile SDK Config</th>
                                                             <th>Supported</th>
                                                             <th>Actions</th>
                                                         </tr>
@@ -95,15 +76,9 @@
                                                                         </c:otherwise>
                                                                     </c:choose>
                                                                 </td>
-                                                                <td class="text-nowrap">
-                                                                    <c:out value="${item.applicationKey}"/>
-                                                                    <button class="btn btn-default btn-table btn-clipboard" type="button" data-clipboard-text="<c:out value="${item.applicationKey}"/>">
-                                                                        <span class="glyphicon glyphicon-copy"></span>
-                                                                    </button>
-                                                                </td>
-                                                                <td class="text-nowrap">
-                                                                    <c:out value="${item.applicationSecret}"/>
-                                                                    <button class="btn btn-default btn-table btn-clipboard" type="button" data-clipboard-text="<c:out value="${item.applicationSecret}"/>">
+                                                                <td>
+                                                                    <c:out value="${fn:substring(item.mobileSdkConfig, 0, 50)}..."/>
+                                                                    <button class="btn btn-default btn-table btn-clipboard" type="button" data-clipboard-text="<c:out value="${item.mobileSdkConfig}"/>">
                                                                         <span class="glyphicon glyphicon-copy"></span>
                                                                     </button>
                                                                 </td>
@@ -124,7 +99,7 @@
                                                                                 <input type="hidden" name="enabled" value="false"/>
                                                                                 <input type="hidden" name="version" value="<c:out value="${item.applicationVersionId}"/>"/>
                                                                                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                                                                <input type="submit" value="Disable" class="btn btn-sm btn-danger pull-right btn-table"/>
+                                                                                <input type="submit" value="Disable" class="btn btn-sm btn-danger btn-table"/>
                                                                             </form>
                                                                         </c:when>
                                                                         <c:otherwise>
@@ -132,7 +107,7 @@
                                                                                 <input type="hidden" name="enabled" value="true"/>
                                                                                 <input type="hidden" name="version" value="<c:out value="${item.applicationVersionId}"/>"/>
                                                                                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                                                                <input type="submit" value="Enable" class="btn btn-sm btn-default pull-right btn-table"/>
+                                                                                <input type="submit" value="Enable" class="btn btn-sm btn-default btn-table"/>
                                                                             </form>
                                                                         </c:otherwise>
                                                                     </c:choose>
@@ -170,7 +145,7 @@
                                             <div class="panel panel-default">
                                                 <div class="panel-heading">
                                                     <h3 class="panel-title button-sm pull-left">Callbacks</h3>
-                                                    <a href="${pageContext.request.contextPath}/application/detail/<c:out value="${id}"/>/callback/create" class="btn btn-sm btn-default pull-right">Add Callback</a>
+                                                    <a href="${pageContext.request.contextPath}/application/detail/<c:out value="${id}"/>/callback/create/form" class="btn btn-sm btn-default pull-right">Add Callback</a>
                                                     <div class="clearfix"></div>
                                                 </div>
 
@@ -202,7 +177,7 @@
                                                                             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                                                             <input type="submit" value="Remove" class="btn btn-sm btn-danger pull-right btn-table"/>
                                                                         </form>
-                                                                        <form action="${pageContext.request.contextPath}/application/detail/<c:out value="${id}"/>/callback/update" method="POST" class="pull-right">
+                                                                        <form action="${pageContext.request.contextPath}/application/detail/<c:out value="${id}"/>/callback/update/form" method="GET" class="pull-right">
                                                                             <input type="hidden" name="callbackId" value="<c:out value="${item.id}"/>"/>
                                                                             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                                                                             <input type="submit" value="Update" class="btn btn-sm btn-success pull-right btn-table"/>
@@ -286,102 +261,6 @@
                             </tr>
                             </tbody>
                         </table>
-                    </div>
-
-                    <div role="tabpanel" class="tab-pane" id="recovery" aria-labelledby="tabs-recovery">
-                        <form action="${pageContext.request.contextPath}/application/detail/<c:out value="${id}"/>/recovery/update/do.submit" method="POST" class="action-update">
-                            <table class="table w100" style="margin-bottom: 0">
-                                <tbody>
-                                <tr>
-                                    <td>
-
-                                        <div class="row">
-                                            <div class="col-sm-12">
-                                                <div class="panel panel-info" style="margin-top: 30px;">
-                                                    <div class="panel-body">
-                                                        <span class="glyphicon glyphicon-info-sign"></span> Activation recovery settings enable a new self-service activation method.
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-sm-12">
-                                                <div class="panel panel-default">
-
-                                                    <div class="panel-heading">
-                                                        <h3 class="panel-title">Activation Recovery</h3>
-                                                    </div>
-
-                                                    <div class="panel-body">
-                                                        <p>
-                                                            <label for="activationRecoveryEnabled" style="font-weight: normal; margin: 0;">
-                                                                <input type="checkbox" id="activationRecoveryEnabled" name="activationRecoveryEnabled" <c:if test="${activationRecoveryEnabled}">checked</c:if>/>&nbsp;Activation Recovery Enabled
-                                                            </label>
-                                                        </p>
-                                                        <c:if test="${activationRecoveryEnabled}">
-                                                            <p>
-                                                                <label for="recoveryPostcardEnabled" style="font-weight: normal; margin: 0;">
-                                                                    <input type="checkbox" id="recoveryPostcardEnabled" name="recoveryPostcardEnabled" <c:if test="${recoveryPostcardEnabled}">checked</c:if>/>&nbsp;Recovery Postcard Enabled
-                                                                </label>
-                                                            </p>
-                                                            <c:if test="${recoveryPostcardEnabled}">
-                                                                <div class="row">
-                                                                    <div class="col-sm-6">
-                                                                        <c:if test="${not empty postcardPublicKey}">
-                                                                            <div class="panel panel-default">
-                                                                                <div class="panel-heading">
-                                                                                    <h3 class="panel-title btn-sm pull-left">Recovery Postcard Public Key</h3>
-                                                                                    <button class="btn btn-default btn-clipboard pull-right" type="button" data-clipboard-text="<c:out value="${postcardPublicKey}"/>">
-                                                                                        <span class="glyphicon glyphicon-copy"></span>
-                                                                                    </button>
-                                                                                    <div class="clearfix"></div>
-                                                                                </div>
-                                                                                <div class="panel-body">
-                                                                                    <p>
-                                                                                        This public key represents PowerAuth server during key exchange with Postcard printing center.
-                                                                                    </p>
-                                                                                    <div class="well code wrap" style="margin-bottom: 5px">
-                                                                                        <c:out value="${postcardPublicKey}"/>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </c:if>
-                                                                    </div>
-                                                                    <div class="col-sm-6">
-                                                                        <div class="panel panel-default">
-                                                                            <div class="panel-heading">
-                                                                                <h3 class="panel-title btn-sm">Recovery Postcard Printing Center Public Key</h3>
-                                                                            </div>
-                                                                            <div class="panel-body">
-                                                                                <p>
-                                                                                    This public key represents Postcard printing center during key exchange with PowerAuth server.
-                                                                                </p>
-                                                                                <textarea class="form-control noresize well code wrap w100" style="resize: none; margin-bottom: 5px" rows="2" name="remotePostcardPublicKey"><c:out value="${remotePostcardPublicKey}"/></textarea>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <label for="allowMultipleRecoveryCodes" style="font-weight: normal; margin: 0;">
-                                                                    <input type="checkbox" id="allowMultipleRecoveryCodes" name="allowMultipleRecoveryCodes" <c:if test="${allowMultipleRecoveryCodes}">checked</c:if>/>&nbsp;Allow Multiple Recovery Codes for User
-                                                                </label>
-                                                            </c:if>
-                                                        </c:if>
-                                                        <input type="hidden" name="applicationId" value="<c:out value="${id}"/>"/>
-                                                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                                    </div>
-                                                    <div class="panel-footer">
-                                                        <input type="submit" value="Update Settings" class="btn btn-success pull-right"/>
-                                                        <div class="clearfix"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-
-                        </form>
-
                     </div>
                 </div>
 

@@ -18,6 +18,13 @@
 
 package com.wultra.security.powerauth.client.model.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,21 +33,22 @@ import java.util.Map;
  *
  * @author Petr Dvorak, petr@wultra.com
  */
+@Data
 public class OperationCancelRequest {
 
+    @Schema(description = "The identifier of the operation")
+    @NotBlank(message = "Operation ID must not be empty when cancelling operation")
     private String operationId;
-    private final Map<String, String> additionalData = new LinkedHashMap<>();
 
-    public String getOperationId() {
-        return operationId;
-    }
+    @Schema(description = "Additional data associated with the operation")
+    @JsonSetter(nulls = Nulls.SKIP)
+    private final Map<String, Object> additionalData = new LinkedHashMap<>();
 
-    public void setOperationId(String operationId) {
-        this.operationId = operationId;
-    }
-
-    public Map<String, String> getAdditionalData() {
-        return additionalData;
-    }
+    /**
+     * Optional details why the status has changed. The value should be sent in the form of a computer-readable code, not a free-form text.
+     */
+    @Schema(description = "Optional details why the status has changed. The value should be sent in the form of a computer-readable code, not a free-form text.")
+    @Size(max = 32)
+    private String statusReason;
 
 }

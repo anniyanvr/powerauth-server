@@ -24,14 +24,12 @@
     <name>powerauth-java-server</name>
     <description>PowerAuth Server</description>
     <artifactId>powerauth-java-server</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <parent>
-        <groupId>io.getlime.security</groupId>
+        <groupId>com.wultra.security</groupId>
         <artifactId>powerauth-server-parent</artifactId>
-        <version>1.4.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>2.3.0-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -43,43 +41,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>log4j-to-slf4j</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.ws</groupId>
-            <artifactId>spring-ws-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.ws</groupId>
-            <artifactId>spring-ws-security</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                    <groupId>org.bouncycastle</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>ehcache</artifactId>
-                    <groupId>net.sf.ehcache</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>geronimo-javamail_1.4_mail</artifactId>
-                    <groupId>org.apache.geronimo.javamail</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -108,73 +73,109 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+        </dependency>
+
         <!-- PowerAuth Dependencies -->
         <dependency>
-            <groupId>io.getlime.security</groupId>
+            <groupId>com.wultra.security</groupId>
             <artifactId>powerauth-client-model</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>io.getlime.security</groupId>
+            <groupId>com.wultra.security</groupId>
             <artifactId>powerauth-java-crypto</artifactId>
-            <version>${powerauth-java-crypto.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.getlime.core</groupId>
+            <groupId>com.wultra.core</groupId>
             <artifactId>rest-model-base</artifactId>
-            <version>${powerauth-rest-base.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.getlime.core</groupId>
+            <groupId>com.wultra.core</groupId>
             <artifactId>rest-client-base</artifactId>
-            <version>${powerauth-rest-base.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.getlime.core</groupId>
+            <groupId>com.wultra.core</groupId>
             <artifactId>audit-base</artifactId>
-            <version>${powerauth-audit-base.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wultra.core</groupId>
+            <artifactId>http-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.wultra.security</groupId>
+            <artifactId>powerauth-fido2</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>${springdoc-openapi.version}</version>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi-starter-webmvc-ui.version}</version>
         </dependency>
 
         <!-- Other Dependencies -->
-        <dependency>
-            <groupId>wsdl4j</groupId>
-            <artifactId>wsdl4j</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
             <version>${commons-text.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>${bcprov-jdk15on.version}</version>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
 
         <!-- Job Scheduling -->
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-spring</artifactId>
-            <version>${schedlock.version}</version>
         </dependency>
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-provider-jdbc-template</artifactId>
-            <version>${schedlock.version}</version>
+        </dependency>
+
+        <!-- Databases -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
         </dependency>
 
         <!-- Monitoring -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core-micrometer</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <!-- To run on Apple M1 architecture -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
             <scope>runtime</scope>
+            <classifier>osx-aarch_64</classifier>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -184,43 +185,41 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit-jupiter-engine.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-test</artifactId>
+            <version>${webauthn4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webtestclient</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Dependencies for Java 11 -->
         <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>${jaxb-api.version}</version>
+            <groupId>com.wultra.security</groupId>
+            <artifactId>powerauth-rest-client-spring</artifactId>
+            <scope>test</scope>
         </dependency>
+
         <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>${jaxb-runtime.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.istack</groupId>
-            <artifactId>istack-commons-runtime</artifactId>
-            <version>${istack-commons-runtime.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.xml.soap</groupId>
-            <artifactId>javax.xml.soap-api</artifactId>
-            <version>${javax.xml.soap-api.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.xml.messaging.saaj</groupId>
-            <artifactId>saaj-impl</artifactId>
-            <version>${saaj-impl.version}</version>
+            <groupId>nl.jqno.equalsverifier</groupId>
+            <artifactId>equalsverifier</artifactId>
         </dependency>
     </dependencies>
 
@@ -235,29 +234,104 @@
                         <goals>
                             <goal>build-info</goal>
                         </goals>
+                        <configuration>
+                            <!-- Maven 3.10 super-POM sets project.build.outputTimestamp to 1980-02-01 (reproducible builds), which build-info uses by default -->
+                            <time>${maven.build.timestamp}</time>
+                        </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <excludes>
+                        <exclude>
+                            <groupId>jakarta.servlet</groupId>
+                            <artifactId>jakarta.servlet-api</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
 
     <profiles>
         <profile>
-            <id>standalone</id>
+            <id>liquibase</id>
             <dependencies>
                 <dependency>
-                    <groupId>org.postgresql</groupId>
-                    <artifactId>postgresql</artifactId>
+                    <groupId>org.liquibase</groupId>
+                    <artifactId>liquibase-core</artifactId>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-resources</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${basedir}/target/classes/db/changelog</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/docs/db/changelog/changesets/${project.artifactId}</directory>
+                                            <includes>
+                                                <include>**/*.*</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-banned-dependencies</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <bannedDependencies>
+                                            <!--  Liquibase depends on javax.xml.bind:jaxb-api, javax.activation:javax.activation-api -->
+                                            <level>WARN</level>
+                                        </bannedDependencies>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>test-repository</id>
+            <activation>
+                <property>
+                    <name>!useInternalRepo</name>
+                </property>
+            </activation>
+            <properties>
+                <skipPublishing>true</skipPublishing>
+                <maven.deploy.skip>true</maven.deploy.skip>
+            </properties>
         </profile>
     </profiles>
 

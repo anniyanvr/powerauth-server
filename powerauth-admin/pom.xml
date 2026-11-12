@@ -6,14 +6,12 @@
     <name>powerauth-admin</name>
     <description>PowerAuth Server Admin Console</description>
     <artifactId>powerauth-admin</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <parent>
-        <groupId>io.getlime.security</groupId>
+        <groupId>com.wultra.security</groupId>
         <artifactId>powerauth-server-parent</artifactId>
-        <version>1.4.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>2.3.0-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -22,12 +20,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>log4j-to-slf4j</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -54,35 +46,43 @@
 
         <!-- PowerAuth Dependencies -->
         <dependency>
-            <groupId>io.getlime.security</groupId>
+            <groupId>com.wultra.security</groupId>
             <artifactId>powerauth-rest-client-spring</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
-        </dependency>
-
-        <!-- Other Libraries -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>31.1-jre</version>
         </dependency>
 
         <!-- JSTL -->
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>jstl</artifactId>
-            <version>1.2</version>
+            <groupId>jakarta.servlet.jsp.jstl</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        </dependency>
+
+        <!--  Normal Jakarta EE servers already provide JSTL implementation out the box, but Tomcat does not  -->
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
         </dependency>
 
         <!-- QR code support -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
-            <version>3.5.0</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+        </dependency>
+
+        <!-- Standalone run -->
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- For run at Apple M1 architecture -->
@@ -91,6 +91,22 @@
             <artifactId>netty-resolver-dns-native-macos</artifactId>
             <scope>runtime</scope>
             <classifier>osx-aarch_64</classifier>
+        </dependency>
+
+        <!-- Monitoring -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core-micrometer</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
         </dependency>
 
         <!-- Test libraries -->
@@ -104,36 +120,16 @@
     <!-- Build profiles -->
     <profiles>
         <profile>
-            <id>container</id>
+            <id>test-repository</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!useInternalRepo</name>
+                </property>
             </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>jsp-api</artifactId>
-                    <version>2.0</version>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>standalone</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.tomcat.embed</groupId>
-                    <artifactId>tomcat-embed-jasper</artifactId>
-                </dependency>
-            </dependencies>
+            <properties>
+                <skipPublishing>true</skipPublishing>
+                <maven.deploy.skip>true</maven.deploy.skip>
+            </properties>
         </profile>
     </profiles>
 
@@ -148,14 +144,23 @@
                         <goals>
                             <goal>build-info</goal>
                         </goals>
+                        <configuration>
+                            <!-- Maven 3.10 super-POM sets project.build.outputTimestamp to 1980-02-01 (reproducible builds), which build-info uses by default -->
+                            <time>${maven.build.timestamp}</time>
+                        </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <excludes>
+                        <exclude>
+                            <groupId>jakarta.servlet</groupId>
+                            <artifactId>jakarta.servlet-api</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
